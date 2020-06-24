@@ -1,6 +1,6 @@
 
 #include "Arduino.h"
-#include "heltec.h"
+//#include "heltec.h"
 #include <BLEDevice.h>
 #include <BLEScan.h>
 #include <BLEAdvertisedDevice.h>
@@ -52,13 +52,13 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
 
 void setup() {
-  Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
-  Heltec.display->flipScreenVertically();
-  Heltec.display->setFont(ArialMT_Plain_10);
-  Heltec.display->clear();
-  Heltec.display->setFont(ArialMT_Plain_24);
-  Heltec.display->drawString(0, 0, "esp32Covid");
-  Heltec.display->display();
+  //Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
+  //Heltec.display->flipScreenVertically();
+  //Heltec.display->setFont(ArialMT_Plain_10);
+  //Heltec.display->clear();
+  //Heltec.display->setFont(ArialMT_Plain_24);
+  //Heltec.display->drawString(0, 0, "esp32Covid");
+  //Heltec.display->display();
   // Initialize scanner.
   BLEDevice::init("ESP");
   scanner = BLEDevice::getScan();
@@ -97,9 +97,9 @@ void loop() {
 
   if(NewId)
   {
-     Heltec.display->setFont(ArialMT_Plain_24);
-     Heltec.display->drawString(80, 0, "New!");
-     Heltec.display->display(); 
+     //Heltec.display->setFont(ArialMT_Plain_24);
+     //Heltec.display->drawString(80, 0, "New!");
+     //Heltec.display->display(); 
      delay(1000);
      NewId = false;
   }
@@ -109,10 +109,10 @@ void loop() {
   
   
     // clear the display
-    Heltec.display->clear();
+    //Heltec.display->clear();
     // draw the current demo method
   
-    Heltec.display->setFont(ArialMT_Plain_10);
+    //Heltec.display->setFont(ArialMT_Plain_10);
 
     switch(progress++)
     {
@@ -149,16 +149,16 @@ void loop() {
     }
 
     
-    Heltec.display->drawString(0, 0, "Found " + String(seenNotifiers.size())+ " Apps (" + ProgressChar + ")");
+    //Heltec.display->drawString(0, 0, "Found " + String(seenNotifiers.size())+ " Apps (" + ProgressChar + ")");
     int line = 12;
     for (auto const &notifier : seenNotifiers) 
     {
-      Heltec.display->drawString(0,line, notifier.first.c_str());
+      //Heltec.display->drawString(0,line, notifier.first.c_str());
       line += 10;
     }
     
   
     // write the buffer to the display
-    Heltec.display->display();
+    //Heltec.display->display();
 
 }
