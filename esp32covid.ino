@@ -1,41 +1,26 @@
-#include <Arduino.h>
+
+#include "Arduino.h"
+#include "heltec.h"
 #include <BLEDevice.h>
 #include <BLEScan.h>
 #include <BLEAdvertisedDevice.h>
-#include "Tone32.h"
-
-
-// Pin where the + of an LED is connected.
-#define LED_PIN 0
-
-// Pin where the + of a piezo buzzer is connected.
-#define BUZZER_PIN 2
-
-// Tone to play.
-#define BEEP_NOTE NOTE_C6
-
-// Tone duration in milliseconds.
-#define BEEP_DURATION_MS 100
-
-// Scan update time, 5 seems to be a good value.
-#define SCAN_TIME_SECONDS 5
-
-// When to forget old senders.
-#define FORGET_AFTER_MINUTES 20
-
 
 BLEScan *scanner;
 std::map<std::string, unsigned long> seenNotifiers;
+bool NewId = false;
+
+// Scan update time, 5 seems to be a good value.
+#define SCAN_TIME_SECONDS 1
+#define SCAN_TIME_LONG_SECONDS 1
+
+// When to forget old senders.
+#define FORGET_AFTER_SECONDS 5
 
 
-/**
- * Called when a new exposure notifier is seen.
- */
+
 void onNewNotifierFound() {
-  Serial.println("BEEP");
-  digitalWrite(LED_PIN, HIGH);
-  tone(BUZZER_PIN, BEEP_NOTE, BEEP_DURATION_MS, 0);
-  digitalWrite(LED_PIN, LOW);
+  Serial.println("Found a new ID!");
+  NewId = true;
 }
 
 
@@ -52,41 +37,28 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     if (!seenNotifiers.count(advertisedDevice.getAddress().toString())) {
       // New notifier found.
-      Serial.printf("+   %s \r\n", advertisedDevice.getAddress().toString().c_str());
       onNewNotifierFound();
     }
     else {
       // We've already seen this one.
-      Serial.printf("... %s \r\n", advertisedDevice.getAddress().toString().c_str());
+      
     }
-
+    Serial.printf("... %s \r\n", advertisedDevice.getAddress().toString().c_str());
+    
     // Remember, with time.
     seenNotifiers[advertisedDevice.getAddress().toString()] = millis();
   }
 };
 
 
-/**
- * Remove notifiers last seen over FORGET_AFTER_MINUTES ago.
- */
-void forgetOldNotifiers() {
-  for (auto const &notifier : seenNotifiers) {
-    if (notifier.second + (FORGET_AFTER_MINUTES * 60 * 1000) < millis()) {
-      Serial.printf("-   %s \r\n", notifier.first.c_str());
-      seenNotifiers.erase(notifier.first);
-    }
-  }
-}
-
-
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Hi.");
-
-  // Initialize pins.
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(BUZZER_PIN, OUTPUT);
-
+  Heltec.begin(true /*DisplayEnable Enable*/, false /*LoRa Disable*/, true /*Serial Enable*/);
+  Heltec.display->flipScreenVertically();
+  Heltec.display->setFont(ArialMT_Plain_10);
+  Heltec.display->clear();
+  Heltec.display->setFont(ArialMT_Plain_24);
+  Heltec.display->drawString(0, 0, "esp32Covid");
+  Heltec.display->display();
   // Initialize scanner.
   BLEDevice::init("ESP");
   scanner = BLEDevice::getScan();
@@ -95,12 +67,26 @@ void setup() {
   scanner->setInterval(100);
   scanner->setWindow(99);
 
-  Serial.println("Scanning ...");
+  // Setup Serial
+  Serial.begin(115200);
+  Serial.println("esp32Covid");
 }
 
 
+void forgetOldNotifiers() {
+  for (auto const &notifier : seenNotifiers) {
+    if (notifier.second + (FORGET_AFTER_SECONDS * 1000) < millis()) {
+      Serial.printf("-   %s \r\n", notifier.first.c_str());
+      seenNotifiers.erase(notifier.first);
+    }
+  }
+}
+
+int progress = 0;
+char ProgressChar = '-';
+
 void loop() {
-  Serial.println("-----");
+
 
   // Scan.
   scanner->start(SCAN_TIME_SECONDS, false);
@@ -109,5 +95,70 @@ void loop() {
   scanner->clearResults();
   forgetOldNotifiers();
 
-  Serial.printf("Count: %d \r\n", seenNotifiers.size());
+  if(NewId)
+  {
+     Heltec.display->setFont(ArialMT_Plain_24);
+     Heltec.display->drawString(80, 0, "New!");
+     Heltec.display->display(); 
+     delay(1000);
+     NewId = false;
+  }
+
+  
+    Serial.printf("Count: %d \r\n", seenNotifiers.size());
+  
+  
+    // clear the display
+    Heltec.display->clear();
+    // draw the current demo method
+  
+    Heltec.display->setFont(ArialMT_Plain_10);
+
+    switch(progress++)
+    {
+      case 0:
+        ProgressChar = '-';
+        break;
+      case 1:
+        ProgressChar = '\\';
+        break;
+      case 2:
+        ProgressChar = '|';
+        break;
+      case 3:
+        ProgressChar = '/';
+        break;
+      case 4:
+        ProgressChar = '-';
+        break;
+      case 5:
+        ProgressChar = '\\';
+        break;
+      case 6:
+        ProgressChar = '|';
+        break;
+      case 7:
+        ProgressChar = '/';
+        break;
+      case 8:
+        ProgressChar = '-';
+        // Scan a longer period
+        scanner->start(SCAN_TIME_LONG_SECONDS, false);
+        progress = 0;
+        break;
+    }
+
+    
+    Heltec.display->drawString(0, 0, "Found " + String(seenNotifiers.size())+ " Apps (" + ProgressChar + ")");
+    int line = 12;
+    for (auto const &notifier : seenNotifiers) 
+    {
+      Heltec.display->drawString(0,line, notifier.first.c_str());
+      line += 10;
+    }
+    
+  
+    // write the buffer to the display
+    Heltec.display->display();
+
 }
